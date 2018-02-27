@@ -162,7 +162,7 @@ launch_processes(){
 	# Two for loops to launch python processes
 	for platform in "${platforms[@]}"
 	do
-		[[ "$?" == "0" ]] && run_scripts ${platform} &
+		[[ "$?" == "0" ]] && run_scripts ${platform}
 	done 
 
 	[[ "$?" == "0" ]] && return 0 || return 1
