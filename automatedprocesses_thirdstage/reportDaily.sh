@@ -16,12 +16,23 @@ INTERNAL_EMAIL="bill@epiphanyai.com"
 INTERNAL_EMAIL_CC=""
 EMAIL_BCC="data@epiphanyai.com"
 TODAY="$(date "+%Y-%m-%d")"
+CHECKDATE=$(date "+%d")
 BANNER_DATE=$(date "+%A %B %d, %Y")
-YESTERDAY="$(date "+%Y-%m-%d" -d yesterday)"
 CURRENT_MONTH_START="$(date -d "$TODAY" '+%Y-%m-01')"
+CURRENT_MONTH_END="$(date "+%Y-%m-%d" -d yesterday)"
 LAST_MONTH_START="$(date -d "$CURRENT_MONTH_START -1 month" '+%Y-%m-%d')"
 LAST_MONTH_END="$(date -d "$LAST_MONTH_START +1 month -1 day" '+%Y-%m-%d')"
 SUBJECT="Epiphany Daily report for ${BANNER_DATE} Attached"
+
+
+if [[ ${CHECKDATE} -eq "01" ]]
+then
+	REPORT_START=${LAST_MONTH_START}
+	REPORT_END=${LAST_MONTH_END}
+else
+	REPORT_START=${CURRENT_MONTH_START}
+	REPORT_END=${CURRENT_MONTH_END}
+fi
 
 
 
@@ -91,7 +102,7 @@ send_report(){
 			
 		# REACH OUT TO SEE IF adRevenue > 0, if so will send report
 		checkRev=$(${mysql_db}"SELECT SUM(adRevenue) FROM test_Aggregate a LEFT JOIN inventorySources i ON a.invSourceID = i.id WHERE a.date \
-		BETWEEN "\'${CURRENT_MONTH_START}\'" AND "\'${YESTERDAY}\'" AND i.publisherID = '${id}'")
+		BETWEEN "\'${REPORT_START}\'" AND "\'${REPORT_END}\'" AND i.publisherID = '${id}'")
 	
 		#check, if checkRev = NULL, assign to 0.00 for float
 		[[ "$checkRev" == "NULL" ]] && checkRev="0.000"
@@ -103,8 +114,8 @@ send_report(){
 	#		echo $id $pub_email $checkRev $CURRENT_MONTH_START $YESTERDAY
 			# Monthly report
 			${path_kitchen}-file="${path_kjb}reportDaily--EMAILER.kjb" -param:P_ID=${id} -param:EMAIL="${pub_email}" -param:EMAIL_CC="${INTERNAL_EMAIL_CC}" \
-			-param:EMAIL_BCC="${INTERNAL_EMAIL_BCC}" -param:SUBJECT="${SUBJECT}" -param:COMMENT="${COMMENT}" -param:START_DATE="${CURRENT_MONTH_START}" \
-			-param:END_DATE="${YESTERDAY}"
+			-param:EMAIL_BCC="${INTERNAL_EMAIL_BCC}" -param:SUBJECT="${SUBJECT}" -param:COMMENT="${COMMENT}" -param:START_DATE="${REPORT_START}" \
+			-param:END_DATE="${REPORT_END}"
 
 			printf "\r\n $id, $pub_email" >> ${path_reports_xls}publisher_total.txt
 		fi
@@ -112,6 +123,8 @@ send_report(){
 	done < <(echo "$KEY")
 }
 
+
+get_process_date
 send_daily_report(){
 
 	# STEP 1 Creates new files
@@ -127,7 +140,8 @@ send_daily_report(){
 
 
 # Execute script and error handling of script
-send_daily_report 2>&1 | tee -a ${path_daily_log}
+#send_daily_report
+#2>&1 | tee -a ${path_daily_log}
 
 # SAVE TO USE WHEN PASS TO TWO LOGS
 #run_daily_report > >(tee -a ${path_daily_log}) 2> >(tee -a ${path_error_log} >&2)
