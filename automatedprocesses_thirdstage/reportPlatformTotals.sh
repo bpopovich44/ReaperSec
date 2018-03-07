@@ -57,7 +57,7 @@ send_mail(){
 
 	# SEND EMAIL 
 	${path_kitchen}-file="${path_kjb}report_platformTotals--EMAILER.kjb" -param:EMAIL="${EMAIL}" -param:EMAIL_CC="${EMAIL_CC}" \
-	-param:EMAIL_BCC="${EMAIL_BCC}" -param:SUBJECT="${SUBJECT}" -param:COMMENT="${COMMENT}" -param:START_DATE="${REPORT_START}" -param:END_DATE="${REPORT_END}"
+	-param:EMAIL_BCC="${EMAIL_BCC}" -param:SUBJECT="${SUBJECT}" -param:COMMENT="${COMMENT}" -param:START_DATE="${CURRENT_MONTH_START}" -param:END_DATE="${CURRENT_MONTH_END}"
 
 	}
 

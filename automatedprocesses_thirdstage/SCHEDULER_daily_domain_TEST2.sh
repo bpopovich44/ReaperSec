@@ -26,6 +26,7 @@ mysql_db="mysql --defaults-group-suffix=epiphanydb  -N -se "
 mysql_db1="mysql --defaults-group-suffix=domainlevel -N -se "
 
 # Arrays to hold platforms and daily tables
+#platforms=( "springserve" )
 platforms=( "dna" "dc" "adsym" "tm" "adtrans" "springserve" )
 report_book=( "domain" "InventorySources" ) 
 
@@ -34,7 +35,7 @@ report_book=( "domain" "InventorySources" )
 
 run_inventorySources(){
 	
-        count=0
+	count=0
         num_per_rotation="300000"
         invsources_v2_count=$(${mysql_db1} "SELECT COUNT(*) FROM "${platform}_InventorySources_v2" WHERE DATE ="\'${YESTERDAYDATE_1}\'" OR "\'${YESTERDAYDATE_2}\'"")
         number_of_loops=$(($invsources_v2_count / $num_per_rotation))
@@ -45,7 +46,7 @@ run_inventorySources(){
         until [[ $count -eq $number_of_loops ]]
         do
 
-        	${path_pan}-file="${path_ktr}${platform}_inventorysources_v2.ktr" -param:ROWNUM_START="${rownum_start}" -param:ROWNUM_END="${rownum_end}"
+        	echo ${path_pan}-file="${path_ktr}${platform}_inventorysources_v2.ktr" -param:ROWNUM_START="${rownum_start}" -param:ROWNUM_END="${rownum_end}"
 		
                 count=$((count + 1))
                 rownum_start=$((rownum_start + ${num_per_rotation}))
@@ -55,34 +56,34 @@ run_inventorySources(){
 
         done
 
-        ${path_pan}-file="${path_ktr}${platform}_inventorysources_v2.ktr" -param:ROWNUM_START="${rownum_start}" -param:ROWNUM_END="${invsources_v2_count}"
+        echo ${path_pan}-file="${path_ktr}${platform}_inventorysources_v2.ktr" -param:ROWNUM_START="${rownum_start}" -param:ROWNUM_END="${invsources_v2_count}"
 	return 0
         }
 
 
 run_domain(){
-
+	
 	# Run domain level ktr
-	###${path_pan}-file="${path_ktr}${platform}_domain_v2.ktr" # -param:PROCESS_REPORT="${platform}_${report}_v2"
+	echo ${path_pan}-file="${path_ktr}${platform}_domain_v2.ktr" # -param:PROCESS_REPORT="${platform}_${report}_v2"
 
 	[[ "$?" == '0' ]] && run_inventorySources ${platform} || return 1
 	}
 
 
 daily_domain(){
+
 	count=
 
 	[[ $platform == "springserve" ]] && prefix="springserve" || prefix="oath"		
 
-	[[ -x ${path_file}"${prefix}_${report}_v2.py" ]] && ${path_file}"${prefix}_${report}_v2.py" ${platform} || return 0 
+	[[ -x ${path_file}"${prefix}_${report}_v2.py" ]] && echo ${path_file}"${prefix}_${report}_v2.py" ${platform} || return 0 
 	check_db=$(${mysql_db1}"SELECT NULL FROM "${platform}_${report}_v2" WHERE DATE IN ("\'${YESTERDAYDATE_1}\'", "\'${YESTERDAYDATE_2}\'") LIMIT 1")
 	
-	echo check_db for ${prefix}_${report}___$check_db
 	if [[ -z "${check_db}" ]]
 	then
 		while [[ -z "${check_db}" ]] && [[ "${count}" -lt 3 ]]
 		do
-			[[ -x ${path_file}"${prefix}_${report}_v2.py" ]] && ${path_file}"${prefix}_${report}_v2.py" ${platform} || return 0 
+			[[ -x ${path_file}"${prefix}_${report}_v2.py" ]] && echo ${path_file}"${prefix}_${report}_v2.py" ${platform} || return 0 
 			check_db=$(${mysql_db1}"SELECT NULL FROM "${platform}_${report}_v2" WHERE DATE IN ("\'${YESTERDAYDATE_1}\'", "\'${YESTERDAYDATE_2}\'") LIMIT 1")
 
 			count=$((count + 1))
@@ -94,17 +95,16 @@ daily_domain(){
 	case ${check_db} in
 
                 ""|"0" )
-
-                        { send_error_mail; printf "\n${TIMESTAMP} ${platform}_${report}_v2.py ERROR. \
-                        LOOK AT daily_process.log for more information." >> ${path_error_log}; return 1; }
+			echo no revenue
+                        #{ send_error_mail; printf "\n${TIMESTAMP} ${platform}_${report}_v2.py ERROR. LOOK AT daily_process.log for more information." >> ${path_error_log}; return 1; }
 
                 ;;
 
                 "NULL" )
 
-                        [[ ${report} = "domain" ]] && return 0
-                        [[ ${report} = "InventorySources" ]] && echo complete 
-			#[[ ${report} = "InventorySources" ]] && run_domain ${platform} ${report} ${prefix}
+                        echo [[ ${report} = "domain" ]] && return 0
+                        #[[ ${report} = "InventorySources" ]] && echo complete 
+			echo [[ ${report} = "InventorySources" ]] && run_domain ${platform} ${report} ${prefix}
 
                 ;;
         esac
@@ -114,7 +114,6 @@ daily_domain(){
 
 run_scripts(){
 	
-	# Two for loops to launch python processes
 	for report in "${report_book[@]}"
 	do
 		[[ "$?" == "0" ]] && daily_domain ${platform} ${report}
@@ -125,7 +124,8 @@ run_scripts(){
 
 
 launch_processes(){
-	
+
+	#Need two loops so can run each platform together and put as a background process
 	for platform in "${platforms[@]}"
 	do
 		[[ "$?" == "0" ]] && run_scripts ${platform}
@@ -136,16 +136,5 @@ launch_processes(){
 
 
 
+launch_processes
 
-run_daily_domain(){
-
-
-	## STEP 2 launch python scripts
-	launch_processes
-	
-	}
-
-
-
-# Execute script and error handling of script
-run_daily_domain

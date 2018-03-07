@@ -102,7 +102,7 @@ send_report(){
 			
 		# REACH OUT TO SEE IF adRevenue > 0, if so will send report
 		checkRev=$(${mysql_db}"SELECT SUM(adRevenue) FROM test_Aggregate a LEFT JOIN inventorySources i ON a.invSourceID = i.id WHERE a.date \
-		BETWEEN "\'${REPORT_START}\'" AND "\'${REPORT_END}\'" AND i.publisherID = '${id}'")
+		BETWEEN "\'${CURRENT_MONTH_START}\'" AND "\'${CURRENT_MONTH_END}\'" AND i.publisherID = '${id}'")
 	
 		#check, if checkRev = NULL, assign to 0.00 for float
 		[[ "$checkRev" == "NULL" ]] && checkRev="0.000"
@@ -114,8 +114,8 @@ send_report(){
 	#		echo $id $pub_email $checkRev $CURRENT_MONTH_START $YESTERDAY
 			# Monthly report
 			${path_kitchen}-file="${path_kjb}reportDaily--EMAILER.kjb" -param:P_ID=${id} -param:EMAIL="${pub_email}" -param:EMAIL_CC="${INTERNAL_EMAIL_CC}" \
-			-param:EMAIL_BCC="${INTERNAL_EMAIL_BCC}" -param:SUBJECT="${SUBJECT}" -param:COMMENT="${COMMENT}" -param:START_DATE="${REPORT_START}" \
-			-param:END_DATE="${REPORT_END}"
+			-param:EMAIL_BCC="${INTERNAL_EMAIL_BCC}" -param:SUBJECT="${SUBJECT}" -param:COMMENT="${COMMENT}" -param:START_DATE="${CURRENT_MONTH_START}" \
+			-param:END_DATE="${CURRENT_MONTH_END}"
 
 			printf "\r\n $id, $pub_email" >> ${path_reports_xls}publisher_total.txt
 		fi
@@ -124,7 +124,7 @@ send_report(){
 }
 
 
-get_process_date
+
 send_daily_report(){
 
 	# STEP 1 Creates new files
@@ -140,7 +140,7 @@ send_daily_report(){
 
 
 # Execute script and error handling of script
-#send_daily_report
+send_daily_report
 #2>&1 | tee -a ${path_daily_log}
 
 # SAVE TO USE WHEN PASS TO TWO LOGS
