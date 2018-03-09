@@ -26,7 +26,7 @@ CURRENT_MONTH_END="$(date "+%Y-%m-%d" -d yesterday )"
 LAST_MONTH_START="$(date -d "$CURRENT_MONTH_START -1 month" '+%Y-%m-%d')"
 LAST_MONTH_END="$(date -d "$LAST_MONTH_START +1 month -1 day" '+%Y-%m-%d')"
 
-if [[ ${CHECKDATE} -eq "01" ]]
+if [[ "${CHECKDATE}" = "01" ]]
 then
 	REPORT_START=${LAST_MONTH_START}
 	REPORT_END=${LAST_MONTH_END}
@@ -57,7 +57,7 @@ send_mail(){
 
 	# SEND EMAIL 
 	${path_kitchen}-file="${path_kjb}report_platformTotals--EMAILER.kjb" -param:EMAIL="${EMAIL}" -param:EMAIL_CC="${EMAIL_CC}" \
-	-param:EMAIL_BCC="${EMAIL_BCC}" -param:SUBJECT="${SUBJECT}" -param:COMMENT="${COMMENT}" -param:START_DATE="${CURRENT_MONTH_START}" -param:END_DATE="${CURRENT_MONTH_END}"
+	-param:EMAIL_BCC="${EMAIL_BCC}" -param:SUBJECT="${SUBJECT}" -param:COMMENT="${COMMENT}" -param:START_DATE="${REPORT_START}" -param:END_DATE="${REPORT_END}"
 
 	}
 
