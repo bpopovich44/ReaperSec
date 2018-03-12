@@ -6,6 +6,11 @@
 ##
 
 
+START_TIME=$(date +%s)
+YESTERDAYDATE_1=$(date +%Y-%m-%d -d yesterday)
+YESTERDAYDATE_2=$(date +%m/%d/%Y -d yesterday)
+TIMESTAMP="$(date "+%Y-%m-%d %H:%M:%S")"
+
 # Paths
 path_file="/usr/local/sbin/"
 path_pan="/home/ec2-user/data-integration/pan.sh "
@@ -21,40 +26,26 @@ mysql_db2="mysql --defaults-group-suffix=kalturadb -N -e "
 mysql_db3="mysql --defaults-group-suffix=dailyprocess -N -se "
 
 
-
 create_tag(){
 
-        #new_created_inventorysources=$(${mysql_db}"SELECT NAME FROM inventorySources_TEST WHERE publisherID is NULL OR publisherID = '';")
         emptytag_inventorysources=$(${mysql_db}"SELECT CONCAT(id, '-'), NAME FROM inventorySources_TEST WHERE publisherID is NULL OR publisherID = '' LIMIT 1;")
         tag_inventorysources=$(${mysql_db}"SELECT NAME FROM inventorySources_TEST WHERE publisherID is NULL OR publisherID = '' LIMIT 1;")
-	# Empty array to hold found inventorysources in tag generator
 	
+	# Empty array to hold found inventorysources in tag generator
 	declare -a bag_of_tags
-	echo bagOtags1---$bag_of_tags---
 
-	tagCounter=0
-
-#	while [[ $tagCounter -le 2 ]]
-#	do
 	
 	if [[ -n $emptytag_inventorysources ]]
         then    
                 while IFS='-' read -r tagId tagName tagType tagNote tagFloor last
                 do
-                        
-
+       
 			tag_Id="$(echo -e "${tagId}" | sed -e 's/^[[:space:]]*//' -e 's/[[:space:]]*$//')"
 			tag_Name="$(echo -e "${tagName}" | sed -e 's/^[[:space:]]*//' -e 's/[[:space:]]*$//')"
 			tag_Type="$(echo -e "${tagType//$/}" | sed -e 's/^[[:space:]]*//' -e 's/[[:space:]]*$//')"
 			tag_Note="$(echo -e "${tagNote//$/}" | sed -e 's/^[[:space:]]*//' -e 's/[[:space:]]*$//')"
 			tag_Floor="$(echo -e "${tagFloor//$/}" | sed -e 's/^[[:space:]]*//' -e 's/[[:space:]]*$//')"
 
-			echo tag_id---$tag_Id---
-			echo tag_Name---$tag_Name---
-			echo tag_Type---$tag_Type---
-			echo tag_Note---$tag_Note---
-			echo tag_Floor---$tag_Floor---
-			echo
 
                         case $tag_Type in
                                 mw|MW|"Mobile Web"|"mobile web"|"mobileweb"|"MobileWeb" )
@@ -97,7 +88,6 @@ create_tag(){
 
                                 [0-9]* )
 					tag_Floor=$(echo -e $tag_Note | sed -e 's/\([a-zA-Z: \t]\)//g')  && tag_Note='-'
-                                        #tag_Floor=$(echo -e $tag_Note | sed -e 's/[^0-9]*$//')  && tag_Note='-'
                                 ;;
      
                                 *Test*|*test*|*TEST* )
@@ -115,7 +105,6 @@ create_tag(){
 
                         case $tag_Floor in
                                 *[0-9]* )
-					#tag_Floor=$(echo $tag_Floor | sed 's/[^0-9]*//g')
 					tag_Floor=$(echo $tag_Floor | sed 's/\([a-zA-Z: \t]\)//g')
                                 ;;
 
@@ -130,55 +119,38 @@ create_tag(){
                         esac
 
                         [[ -z $emptytag_inventorysources ]] && publisherID='0' break || publisherID=$(${mysql_db}"SELECT id FROM publishers WHERE friendlyName = \"$tag_Name\" ")
-: <<'END'
+
                         # If no publisher, this creates publisher
                         if [[ -z $publisherID ]]
                         then
                                 ${mysql_db}"INSERT INTO publishers (friendlyName) VALUES (\"$tag_Name\");"
                                 publisherID=$(${mysql_db}"SELECT id FROM publishers WHERE friendlyName = \"$tag_Name\" ")
                         fi
-
 			
                         # Reaches out to kaltura db to grab platformTag_id
 			platformTag_ID=$(${mysql_db2}"SELECT product_id FROM demand WHERE NAME = '$tag_inventorysources'")
-			
-END
+
                         # Check for pre-existing intelligent tags.   Double quotes to keep \n
                         query="$(${mysql_db}"SELECT CONCAT(id, '-'), NAME FROM intelligentTags_TEST WHERE publisherID = \"$publisherID\" ")"
 
 			# Add new tags to bag_of_tags array
 			bag_of_tags=("${bag_of_tags[@]}" "${query}")
-			echo ---bagOtags2---$bag_of_tags
+
                         if [[ -n $bag_of_tags ]]
                         then
                                 while read -r line
                                 do
                                         readLine=$line
-					echo readLine---$readLine---
                                         intelliTagID=
-
- 			
 
                                         while IFS='-' read  -r telliID telliName telliFloor telliType telliNote last
                                         do
          
-						echo in loop
-
 						telli_Id="$(echo -e "${telliID}" | sed -e 's/^[[:space:]]*//' -e 's/[[:space:]]*$//')"
 						telli_Name="$(echo -e "${telliName}" | sed -e 's/^[[:space:]]*//' -e 's/[[:space:]]*$//')"
 						telli_Floor="$(echo -e "${telliFloor//$/}" | sed -e 's/^[[:space:]]*//' -e 's/[[:space:]]*$//')"
 						telli_Type="$(echo -e "${telliType//$/}" | sed -e 's/^[[:space:]]*//' -e 's/[[:space:]]*$//')"
 						telli_Note="$(echo -e "${telliNote//$/}" | sed -e 's/^[[:space:]]*//' -e 's/[[:space:]]*$//')"
-						echo
-						echo "from telliTag telli_Id---"$telli_Id---
-						echo "from telliTag telli_Name---"$telli_Name---
-						echo "from telliTag telli_type---"$telli_Type---
-						echo "from telliTag telli_Note---"$telli_Note---
-						echo "from telliTag telli_Floor---"$telli_Floor---
-						echo
-						
-
-
 
                                                 case $telli_Floor in
                                                         *[0-9]* )
@@ -244,11 +216,6 @@ END
                                                         ;;
                                                 esac
 
-						echo $telli_Name = $tag_Name 
-                                               	echo $telli_Floor = $tag_Floor 
-                                                echo $telli_Type = $tag_Type 
-                                                echo $telli_Note = $tag_Note 
-
                                                 if [[ "$telli_Name" == "$tag_Name" ]] &&
                                                	   [[ "$telli_Floor" == "$tag_Floor" ]] &&
                                                    [[ "$telli_Type" == "$tag_Type" ]] &&
@@ -276,26 +243,26 @@ END
                         fi
 
 
-			echo found_tag---$emptytag_inventorysources---       
-        		echo tag---$tag_inventorysources--- 
-        		echo tag_id---$tag_Id--- 
-        		echo tag_name---$tag_Name--- 
-        		echo tag_type---$tag_Type--- 
-        		echo tag_floor---$tag_Floor---
-        		echo tag_Note---$tag_Note--- 
-        		echo publisherID---$publisherID--- 
+			echo found_tag---$emptytag_inventorysources---
+			echo tag---$tag_inventorysources---
+			echo tag_id---$tag_Id---
+			echo tag_name---$tag_Name---
+			echo tag_type---$tag_Type---
+			echo tag_floor---$tag_Floor---
+			echo tag_Note---$tag_Note---
+			echo publisherID---$publisherID---
 			echo
 			echo
-        		echo telli_ID---$telli_Id--- 
-        		echo telli_Name---$telli_Name--- 
-        		echo telli_Floor---$telli_Floor--- 
-        		echo telli_Type---$telli_Type--- 
-        		echo telli_Note---$telli_Note--- 
-			echo intellitagID---$intelliTagID---                      
-        		echo platformTagID---$platformTag_ID--- 
+			echo telli_ID---$telli_Id---
+			echo telli_Name---$telli_Name---
+			echo telli_Floor---$telli_Floor---
+			echo telli_Type---$telli_Type---
+			echo telli_Note---$telli_Note---
+			echo intellitagID---$intelliTagID---
+			echo platformTagID---$platformTag_ID---
 
 
-#: <<'END'
+			
 			# Actual tag creation   
                         case "$tag_Type" in
 
@@ -322,27 +289,14 @@ END
                                  * )
                                         tag_creation=$(${mysql_db}"UPDATE inventorySources_TEST SET publisherID = $publisherID, intelligentTagID = $intelliTagID, \
                                                 createdAt = CURDATE(), floor = $tag_Floor, isPlatformTag = "1" WHERE id = "${tag_Id}";")
-                                        #tag_creation=$(${mysql_db}"UPDATE inventorySources_TEST SET publisherID = $publisherID  WHERE id = "${tag_Id}";")
-                                        
 					;;
                         esac
-#END
+
                 done <<< $emptytag_inventorysources
-	
-	
 	
 	fi
 
-
-	# exit loop if cycle through more than 2 times
-#	[[ $tagCounter -eq 1 ]] && exit || tagCounter=$((tagCounter + 1))
-
-#	done
-	echo publisherID---$publisherID---
-	echo bagOtags---$bag_of_tags---
-	
 	}
-
 
 
 
@@ -350,7 +304,6 @@ check_for_empty_tag(){
 
 	echo checking for empty tags
 	emptytag=$(${mysql_db}"SELECT NULL FROM inventorySources_TEST WHERE publisherID IS NULL OR publisherID = '' OR publisherID = '0' LIMIT 1;")
-	#emptytag=$(${mysql_db}"SELECT CONCAT(id, '-'), NAME FROM inventorySources_TEST WHERE publisherID IS NULL OR publisherID = '' OR publisherID = '0' LIMIT 1;")
 	if [[ -n $emptytag ]]
 	then
        		while [[ -n $emptytag ]]
@@ -363,4 +316,6 @@ check_for_empty_tag(){
 	return 0
 	}
 
+
 check_for_empty_tag 
+		
