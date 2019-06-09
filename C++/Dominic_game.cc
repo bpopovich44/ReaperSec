@@ -33,7 +33,7 @@ int main()
 	int random_number;
 	string name;
 
-	//  Pointers
+	//  Pointers on the stack
  	int* ptries = &tries;
 	int* ptralwd = &tries_allowed;
 	char* pG = &playGame;
@@ -41,7 +41,14 @@ int main()
 	int* prndNmbr = &random_number;
 	int* pMN = &MAX_NUMBER;
 
-	cout << "Hi Dominic do you wan't to play a game.....  Enter \'Y\' for Yes and \'N\' for No: " << endl;
+
+	cout << "Who is playing the game?" << endl;
+	getline(cin, name);
+
+	// Pointer on the heap
+	string* pname = new string(name);
+	
+	cout << "Hi " << *pname <<  " do you wan't to play a game.....  Enter \'Y\' for Yes and \'N\' for No: " << endl;
 	cin >> playGame;
 	cin.clear();
 	cin.ignore();
@@ -98,6 +105,7 @@ int main()
 		do
 		{
 			printf("\nYou used %i tries.  The correct number was: %i. Do you want to try again?  \'Y\' for yes or \'N\' for No.\n", *ptries, *prndNmbr);
+			printf("\nYou used %p tries.  The correct number was: %p. Do you want to try again?  \'Y\' for yes or \'N\' for No.\n", &tries, &random_number);
 			cin >> *pG;
 			cin.clear();
 			cin.ignore();
@@ -127,6 +135,7 @@ int main()
 		cout << "\n\nI didn't understand your input.  Good bye." << endl;
 	}
 	
-	
+	delete pname;
+
 	return 0;
 }
