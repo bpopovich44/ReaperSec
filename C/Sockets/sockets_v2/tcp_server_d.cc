@@ -1,5 +1,5 @@
 //==============================================================================
-//	TCP Client
+//	TCP Server 
 //
 // 	- Create a socket
 // 	- Bind a socket to IP / port
